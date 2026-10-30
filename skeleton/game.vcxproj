@@ -262,7 +262,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="callbacks.cpp" />
+    <ClCompile Include="ForceGenerator.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Particle.cpp" />
+    <ClCompile Include="ParticleEmitter.cpp" />
     <ClCompile Include="RenderUtils.cpp" />
     <ClCompile Include="Render\Camera.cpp" />
     <ClCompile Include="Render\Render.cpp" />
@@ -274,11 +277,17 @@
     <ClInclude Include="callbacks.hpp" />
     <ClInclude Include="core.hpp" />
     <ClInclude Include="EmptyScene.h" />
+    <ClInclude Include="ForceGenerator.h" />
+    <ClInclude Include="ForceRegistry.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleEmitter.h" />
     <ClInclude Include="RenderUtils.hpp" />
     <ClInclude Include="Render\Camera.h" />
     <ClInclude Include="Render\Render.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Scene1.h" />
+    <ClInclude Include="Scene2.h" />
+    <ClInclude Include="Scene3.h" />
     <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Vector3D.h" />
   </ItemGroup>

@@ -22,6 +22,7 @@ public:
 
         debris.reset(new ParticleSystem(500));
         atmosphere.reset(new ParticleSystem(1500));
+        smokeSystem.reset(new ParticleSystem(900)); // Humo sin gravedad: asciende y permanece suspendido.
         shots.reset(new ParticleSystem(100));
         for (ParticleSystem* s : { debris.get(),atmosphere.get(),shots.get() }) {
             s->addForceGenerator(s == shots.get() ? static_cast<ForceGenerator*>(projectileGravity.get()) : static_cast<ForceGenerator*>(gravity.get()));
@@ -42,10 +43,13 @@ public:
             Vector3D(0.f, 3.f, -15.f), Vector3D(0.f, 4.f, 0.f),
             Vector3D(10.f, 1.f, 10.f), Vector3D(3.f, 2.f, 3.f),
             40.f, D::Uniform, 0.2f, 0.98f, 5.f, 0.22f, Vector4(0.65f, 0.56f, 0.42f, 1.f))));
-        smoke = atmosphere->addGenerator(std::unique_ptr<ParticleGenerator>(new ParticleGenerator(
-            Vector3D(0.f, 4.f, -15.f), Vector3D(0.f, 5.f, 0.f),
-            Vector3D(3.f, 0.5f, 3.f), Vector3D(1.5f, 2.f, 1.5f),
-            28.f, D::Gaussian, 0.35f, 0.97f, 6.f, 0.34f, Vector4(0.48f, 0.48f, 0.5f, 1.f))));
+        // Humo gaussiano: nace en el tejado, asciende lentamente y se dispersa.
+        // Sistema separado SIN gravedad: evita el efecto de chorro que sube y cae.
+        // Tejado: x=-7, z=6, superficie superior y=6.8.
+        smoke = smokeSystem->addGenerator(std::unique_ptr<ParticleGenerator>(new ParticleGenerator(
+            Vector3D(-7.f, 7.15f, 6.f), Vector3D(0.f, 2.2f, 0.f),
+            Vector3D(0.15f, 0.08f, 0.15f), Vector3D(0.9f, 0.45f, 0.9f),
+            55.f, D::Gaussian, 0.12f, 0.90f, 6.f, 0.23f, Vector4(0.58f, 0.59f, 0.62f, 1.f))));
         dust->setEnabled(false); smoke->setEnabled(false);
         shots->onImpact([this](const Projectile& p, const Vector3D& pos) {
             if (explosionEnabled) {
@@ -62,6 +66,7 @@ public:
         if (dt <= 0 || dt > 0.2) return;
         debris->update(dt);
         atmosphere->update(dt);
+        smokeSystem->update(dt);
         shots->update(dt);
         explosion->advance(dt);
     }
@@ -86,7 +91,7 @@ public:
     }
     void cleanup() override {
         // Primero destruir particulas y registros; despues los generadores externos.
-        shots.reset(); atmosphere.reset(); debris.reset();
+        shots.reset(); smokeSystem.reset(); atmosphere.reset(); debris.reset();
         for (auto& obj : environment) if (obj->item) obj->item->release();
         environment.clear();
         explosion.reset(); tornado.reset(); wind.reset(); gravity.reset(); projectileGravity.reset();
@@ -114,7 +119,8 @@ private:
         }
     }
     void setForce(ForceGenerator* force, bool enabled) {
-        for (ParticleSystem* s : { debris.get(),atmosphere.get(),shots.get() }) {
+        for (ParticleSystem* s : { debris.get(),atmosphere.get(),shots.get(),smokeSystem.get() }) {
+            if (force == gravity.get() && s == smokeSystem.get()) continue;
             ForceGenerator* target = (force == gravity.get() && s == shots.get())
                 ? static_cast<ForceGenerator*>(projectileGravity.get()) : force;
             if (enabled) s->addForceGenerator(target);
@@ -147,7 +153,7 @@ private:
     std::unique_ptr<WindForce> wind;
     std::unique_ptr<VortexForce> tornado;
     std::unique_ptr<ExplosionForce> explosion;
-    std::unique_ptr<ParticleSystem> debris, atmosphere, shots;
+    std::unique_ptr<ParticleSystem> debris, atmosphere, shots, smokeSystem;
     ParticleGenerator* dust = nullptr, * smoke = nullptr;
     std::vector<std::unique_ptr<StaticObject>> environment;
     bool windEnabled = false, tornadoEnabled = false, gravityEnabled = true, explosionEnabled = true;

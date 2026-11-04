@@ -59,6 +59,10 @@ void SceneManager::keyPress(unsigned char key, const physx::PxTransform& cameraT
         changeScene("Escena2");
         return;
     }
+    else if (key == '4') {
+        changeScene("DisasterSimulator");
+        return;
+    }
     else if (key == '2') {
         changeScene("Escena3");
         return;

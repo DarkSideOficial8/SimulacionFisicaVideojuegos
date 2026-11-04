@@ -50,6 +50,8 @@ public:
         : center(center), radius(radius), strength(strength), tau(tau) {}
     void updateForce(Particle& p, double dt) override;
     void restart() { elapsed = 0.f; active = true; }
+    void stop() { active = false; }
+    void setCenter(const Vector3D& value) { center = value; }
     void advance(double dt) { if (active) { elapsed += static_cast<float>(dt); if (elapsed > 4.f * tau) active = false; } }
 private:
     Vector3D center;

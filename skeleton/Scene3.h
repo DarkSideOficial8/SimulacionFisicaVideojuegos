@@ -18,8 +18,6 @@ public:
         explosion.reset(new ExplosionForce(Vector3D(0.f, 10.f, -15.f), 32.f, 2500.f, 0.9f));
         earth.reset(new ParticleSystem());
         light.reset(new ParticleSystem());
-        earth->addForceGenerator(gravityEarth.get());
-        light->addForceGenerator(gravityLight.get());
         // Los mismos generadores externos pueden actuar en ambos sistemas.
         for (auto* system : {earth.get(), light.get()})
             system->addForceGenerator(explosion.get());
@@ -32,7 +30,7 @@ public:
                 Vector3D(std::cos(angle) * radius, y, -15.f + std::sin(angle) * radius),
                 Vector3D(), m, 1.f, 1000.f, 0.55f,
                 Vector4(0.25f + 0.012f * i, 0.65f, 1.f, 1.f)));
-            (i < 24 ? earth : light)->addParticle(std::move(p));
+            (i < 16 ? earth : light)->addParticle(std::move(p));
         }
     }
     void update(double dt) override {
@@ -48,7 +46,7 @@ public:
                 init();
                 if (oldWind) toggleWind();
                 if (oldVortex) toggleVortex();
-                if (!oldGravity) toggleGravity();
+                if (oldGravity) toggleGravity();
                 explosion->restart();
             }
         } else if (key == 'g') toggleGravity();
@@ -60,7 +58,7 @@ public:
         earth.reset(); light.reset();
         explosion.reset(); vortex.reset(); wind.reset();
         gravityLight.reset(); gravityEarth.reset();
-        enableWind = false; enableVortex = false; enableGravity = true;
+        enableWind = false; enableVortex = false; enableGravity = false;
     }
 private:
     void toggleGravity() {
@@ -90,5 +88,5 @@ private:
     std::unique_ptr<WindForce> wind;
     std::unique_ptr<VortexForce> vortex;
     std::unique_ptr<ExplosionForce> explosion;
-    bool enableWind = false, enableVortex = false, enableGravity = true;
+    bool enableWind = false, enableVortex = false, enableGravity = false;
 };

@@ -33,5 +33,5 @@ public:
     void cleanup() override { projectiles.clear(); }
 private:
     std::vector<std::unique_ptr<Projectile>> projectiles;
-    float realMass = 100.f, realSpeed = 500.f, simSpeed = 7.f;
+    float realMass = 0.43f, realSpeed = 15.f, simSpeed = 7.f;
 };

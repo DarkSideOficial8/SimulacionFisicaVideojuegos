@@ -26,8 +26,8 @@ public:
                 Vector3D(camera.p), direction, realMass, realSpeed, simSpeed));
         } else if (key == '+') realMass += 0.001f;
         else if (key == '-') { realMass -= 0.001f; if (realMass < 0.001f) realMass = 0.001f; }
-        else if (key == 'm') realSpeed += 50.f;
-        else if (key == 'n') { realSpeed -= 50.f; if (realSpeed < 50.f) realSpeed = 50.f; }
+        else if (key == 'm') realSpeed += 15.f;
+        else if (key == 'n') { realSpeed -= 15.f; if (realSpeed < 15.f) realSpeed = 15.f; }
         else if (key == 'r') init();
     }
     void cleanup() override { projectiles.clear(); }

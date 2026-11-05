@@ -12,7 +12,7 @@ public:
     void clear() { registrations.clear(); }
     void updateForces(double dt) {
         for (const auto& entry : registrations)
-            entry.particle->applyForceGenerator(*entry.generator, dt);
+            entry.generator->updateForce(*entry.particle, dt);
     }
 private:
     std::vector<Registration> registrations;

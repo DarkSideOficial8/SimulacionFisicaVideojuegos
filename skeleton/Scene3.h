@@ -1,11 +1,10 @@
 #pragma once
 #include "Scene.h"
-#include "ForceGenerator.h"
-#include "ForceRegistry.h"
+#include "ParticleSystem.h"
 #include <memory>
-#include <vector>
 #include <cmath>
 
+// Practica 3: dos sistemas con gravedades diferentes y fuerzas compartidas.
 class Scene3 : public Scene {
 public:
     explicit Scene3(std::string name) : Scene(std::move(name)) {}
@@ -17,60 +16,79 @@ public:
             Vector3D(0.f, 10.f, -15.f), Vector3D(45.f, 35.f, 35.f), 7.f));
         vortex.reset(new VortexForce(Vector3D(0.f, 10.f, -15.f), 24.f, 28.f, 7.f));
         explosion.reset(new ExplosionForce(Vector3D(0.f, 10.f, -15.f), 32.f, 2500.f, 0.9f));
-        // 48 particulas repartidas alrededor del centro de los efectos.
-        // La espiral del tornado y la onda de la explosion resultan visibles.
+        earth.reset(new ParticleSystem());
+        light.reset(new ParticleSystem());
+        earth->addForceGenerator(gravityEarth.get());
+        light->addForceGenerator(gravityLight.get());
+        // Los mismos generadores externos pueden actuar en ambos sistemas.
+        for (auto* system : {earth.get(), light.get()})
+            system->addForceGenerator(explosion.get());
         for (int i = 0; i < 48; ++i) {
             const float angle = 6.2831853f * static_cast<float>(i % 16) / 16.f;
             const float radius = 3.5f + 2.5f * static_cast<float>(i / 16);
             const float y = 7.f + 4.f * static_cast<float>(i / 16);
             const float m = (i % 3 == 0) ? 0.5f : (i % 3 == 1 ? 2.f : 5.f);
-            particles.emplace_back(new Particle(
+            std::unique_ptr<Particle> p(new Particle(
                 Vector3D(std::cos(angle) * radius, y, -15.f + std::sin(angle) * radius),
                 Vector3D(), m, 1.f, 1000.f, 0.55f,
                 Vector4(0.25f + 0.012f * i, 0.65f, 1.f, 1.f)));
+            (i < 24 ? earth : light)->addParticle(std::move(p));
         }
     }
     void update(double dt) override {
-        // Orden del Tema 05: limpiar -> acumular -> integrar.
-        registry.clear();
-        for (size_t i = 0; i < particles.size(); ++i) {
-            Particle* p = particles[i].get();
-            p->clearForce();
-            registry.add(p, i < particles.size() / 2 ? static_cast<ForceGenerator*>(gravityEarth.get())
-                : static_cast<ForceGenerator*>(gravityLight.get()));
-            if (enableWind) registry.add(p, wind.get());
-            if (enableVortex) registry.add(p, vortex.get());
-            registry.add(p, explosion.get());
-        }
-        registry.updateForces(dt);
-        for (auto& p : particles) p->integrateEuler(dt);
+        earth->update(dt);
+        light->update(dt);
         explosion->advance(dt);
     }
     void keyPress(unsigned char key, const physx::PxTransform&) override {
-        if (key == 'e' || key == 'E') {
-            // Recolocar particulas antes de la explosion para que no hayan caido ya.
-            const bool wasWind = enableWind, wasVortex = enableVortex;
-            init();
-            enableWind = wasWind; enableVortex = wasVortex;
-            explosion->restart();
-        }
-        if (key == 'v' || key == 'V') enableWind = !enableWind;
-        if (key == 't' || key == 'T') enableVortex = !enableVortex;
-        if (key == 'r' || key == 'R') init();
+        if (key == 'e') {
+            if (explosion->isActive()) explosion->stop();
+            else {
+                const bool oldWind = enableWind, oldVortex = enableVortex, oldGravity = enableGravity;
+                init();
+                if (oldWind) toggleWind();
+                if (oldVortex) toggleVortex();
+                if (!oldGravity) toggleGravity();
+                explosion->restart();
+            }
+        } else if (key == 'g') toggleGravity();
+        else if (key == 'v') toggleWind();
+        else if (key == 't') toggleVortex();
+        else if (key == 'r') init();
     }
     void cleanup() override {
-        registry.clear();
-        particles.clear();
+        earth.reset(); light.reset();
         explosion.reset(); vortex.reset(); wind.reset();
         gravityLight.reset(); gravityEarth.reset();
-        enableWind = false; enableVortex = false;
+        enableWind = false; enableVortex = false; enableGravity = true;
     }
 private:
-    ForceRegistry registry;
-    std::vector<std::unique_ptr<Particle>> particles;
+    void toggleGravity() {
+        enableGravity = !enableGravity;
+        if (enableGravity) {
+            earth->addForceGenerator(gravityEarth.get());
+            light->addForceGenerator(gravityLight.get());
+        } else {
+            earth->removeForceGenerator(gravityEarth.get());
+            light->removeForceGenerator(gravityLight.get());
+        }
+    }
+    void toggleWind() {
+        enableWind = !enableWind;
+        for (auto* system : {earth.get(), light.get()})
+            if (enableWind) system->addForceGenerator(wind.get());
+            else system->removeForceGenerator(wind.get());
+    }
+    void toggleVortex() {
+        enableVortex = !enableVortex;
+        for (auto* system : {earth.get(), light.get()})
+            if (enableVortex) system->addForceGenerator(vortex.get());
+            else system->removeForceGenerator(vortex.get());
+    }
+    std::unique_ptr<ParticleSystem> earth, light;
     std::unique_ptr<GravityForce> gravityEarth, gravityLight;
     std::unique_ptr<WindForce> wind;
     std::unique_ptr<VortexForce> vortex;
     std::unique_ptr<ExplosionForce> explosion;
-    bool enableWind = false, enableVortex = false;
+    bool enableWind = false, enableVortex = false, enableGravity = true;
 };
